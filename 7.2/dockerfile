@@ -13,7 +13,7 @@ RUN apt-get update \
 		default-mysql-client \
 		libxslt1.1 \
 		libbz2-dev \
-#		libxpm4  \
+		imagemagick \
 		wget \
 		unzip \
 	&& apt-get update -y \
