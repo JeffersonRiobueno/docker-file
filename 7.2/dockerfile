@@ -44,6 +44,9 @@ RUN docker-php-source extract \
 # PHP configuration
 COPY config/php.ini /usr/local/etc/php/
 
+COPY DOCKER/script.sh /var/docker/script.sh
+
+RUN chmod +x /var/docker/script.sh
 
 RUN  a2enmod rewrite headers
 
