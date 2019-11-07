@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sleep 2
+sleep 1
 chmod +x $RB_SCRIP_PATH
 . $RB_SCRIP_PATH
 
