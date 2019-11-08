@@ -2,12 +2,13 @@ FROM php:7.2-apache
 LABEL maintainer="Jefferson Riobueno <riobueno.jr@gmail.com>"
 
 RUN apt-get update \
-	&& apt-get install -y libmcrypt-dev \
-#		libjpeg62-turbo-dev \
-		libjpeg-dev \
-		libpcre3-dev \
-		libpng-dev \
+	&& apt-get install -y \
+		libwebp-dev \
+		libjpeg62-turbo-dev \
+		libpng-dev libxpm-dev \
 		libfreetype6-dev \
+		libmcrypt-dev \
+		libpcre3-dev \
 		libxml2-dev \
 		libicu-dev \
 		libzip-dev \
@@ -17,25 +18,28 @@ RUN apt-get update \
 		imagemagick \
 		wget \
 		unzip \
-		libwebp-dev \
 		zlib1g-dev \
-		libxpm-dev \
 	&& apt-get update -y \
     && rm -rf /var/lib/apt/lists/* 
 
 RUN docker-php-source extract \
 # Extract php source and install missing extensions
     #&& docker-php-source extract \
-	&& docker-php-ext-install iconv gd mbstring intl zip mysqli pdo_mysql soap exif bz2 calendar gettext shmop sockets sysvmsg sysvsem sysvshm wddx\
 	&& if [ -d "/usr/src/php/ext/mcrypt" ]; then docker-php-ext-install mcrypt; fi \
 	&& if [ -d "/usr/src/php/ext/mysql" ]; then docker-php-ext-install mysql; fi \
     && docker-php-ext-configure mysqli --with-mysqli=mysqlnd \
     && docker-php-ext-configure calendar \
-    #&& docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
-    && docker-php-ext-configure gd --with-gd --with-webp-dir --with-jpeg-dir \
-    --with-png-dir --with-zlib-dir --with-xpm-dir --with-freetype-dir \
-    --enable-gd-native-ttf \
+    && docker-php-ext-configure gd \
+    --with-gd \
+    --with-webp-dir \
+    --with-jpeg-dir \
+    --with-png-dir \
+    --with-zlib-dir \
+    --with-xpm-dir \
+    --with-freetype-dir \
+	&& docker-php-ext-install gd iconv mbstring intl zip mysqli pdo_mysql soap exif bz2 calendar gettext shmop sockets sysvmsg sysvsem sysvshm wddx\
 	&& docker-php-source delete 
+
 #   && cp /usr/src/php/php.ini-production ${PHP_INI_DIR}/php.ini \
 #    \
 # Apache configuration
