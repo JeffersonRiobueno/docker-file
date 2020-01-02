@@ -1,0 +1,9 @@
+FROM riobueno/php-apache:7.2
+
+RUN docker-php-ext-configure opcache --enable-opcache \
+    && docker-php-ext-install opcache
+# Copy configuration
+COPY config/opcache.ini $PHP_INI_DIR/conf.d/
+
+RUN  a2enmod rewrite headers
+
