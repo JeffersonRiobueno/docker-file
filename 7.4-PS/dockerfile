@@ -1,0 +1,49 @@
+FROM php:7.4-apache
+LABEL maintainer="Jefferson Riobueno <riobueno.jr@gmail.com>"
+
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		libwebp-dev \
+		libjpeg62-turbo-dev \
+		libpng-dev libxpm-dev \
+		libfreetype6-dev \
+		libmcrypt-dev \
+		libpcre3-dev \
+		libxml2-dev \
+		libicu-dev \
+		libzip-dev \
+		default-mysql-client \
+		libxslt1.1 \
+		libbz2-dev \
+		imagemagick \
+		wget \
+		unzip \
+		zlib1g-dev; \
+    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+	rm -rf /var/lib/apt/lists/*
+
+RUN docker-php-source extract \
+# Extract php source and install missing extensions
+    #&& docker-php-source extract \
+	&& if [ -d "/usr/src/php/ext/mcrypt" ]; then docker-php-ext-install mcrypt; fi \
+	&& if [ -d "/usr/src/php/ext/mysql" ]; then docker-php-ext-install mysql; fi \
+    && docker-php-ext-configure mysqli --with-mysqli=mysqlnd \
+    && docker-php-ext-configure calendar; \
+    docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg --with-webp; \
+	docker-php-ext-install gd iconv mbstring intl zip mysqli pdo_mysql soap exif bz2 calendar gettext shmop sockets sysvmsg sysvsem sysvshm wddx; \
+	docker-php-source delete 
+
+#   && cp /usr/src/php/php.ini-production ${PHP_INI_DIR}/php.ini \
+#    \
+# Apache configuration
+#RUN if [ -x "$(command -v apache2-foreground)" ]; then a2enmod rewrite; fi
+
+# PHP configuration
+COPY config/php.ini /usr/local/etc/php/
+
+COPY DOCKER/script.sh /var/docker/script.sh
+
+RUN chmod +x /var/docker/script.sh
+
+RUN  a2enmod rewrite headers
+
