@@ -21,7 +21,7 @@ RUN set -ex; \
 		libpng-dev \
 		libwebp-dev \
 		libzip-dev \
-		libxml2-dev \  # Required for SOAP extension
+		libxml2-dev \  
 	; \
 	\
 	docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg --with-webp; \
@@ -30,7 +30,7 @@ RUN set -ex; \
 		exif \
 		gd \
 		mysqli \
-		soap \  # Install SOAP extension
+		soap \  
 		zip \
 	; \
 	pecl install imagick-3.4.4; \
