@@ -1,4 +1,4 @@
-FROM php:8.0-apache
+FROM php:8.3-apache
 
 # persistent dependencies
 RUN set -eux; \
@@ -11,43 +11,45 @@ RUN set -eux; \
 
 # install the PHP extensions we need (https://make.wordpress.org/hosting/handbook/handbook/server-environment/#php-extensions)
 RUN set -ex; \
-	\
-	savedAptMark="$(apt-mark showmanual)"; \
-	\
-	apt-get update; \
-	apt-get install -y --no-install-recommends \
-		libfreetype6-dev \
-		libjpeg-dev \
-		libpng-dev \
-		libwebp-dev \
-		libzip-dev \
-	; \
-	\
-	docker-php-ext-configure gd \
-		--with-freetype \
-		--with-jpeg \
-		--with-webp; \
-	docker-php-ext-install -j "$(nproc)" \
-		bcmath \
-		exif \
-		gd \
-		mysqli \
-		zip \
-	; \
-	\
-# reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
-	apt-mark auto '.*' > /dev/null; \
-	apt-mark manual $savedAptMark; \
-	ldd "$(php -r 'echo ini_get("extension_dir");')"/*.so \
-		| awk '/=>/ { print $3 }' \
-		| sort -u \
-		| xargs -r dpkg-query -S \
-		| cut -d: -f1 \
-		| sort -u \
-		| xargs -rt apt-mark manual; \
-	\
-	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
-	rm -rf /var/lib/apt/lists/*
+    savedAptMark="$(apt-mark showmanual)"; \
+    \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        libfreetype6-dev \
+        libjpeg-dev \
+        libpng-dev \
+        libwebp-dev \
+        libzip-dev \
+        libzip5 \
+    ; \
+    \
+    docker-php-ext-configure gd \
+        --with-freetype \
+        --with-jpeg \
+        --with-webp; \
+    docker-php-ext-install -j "$(nproc)" \
+        bcmath \
+        exif \
+        gd \
+        mysqli \
+        zip \
+    ; \
+    \
+    # marcar runtime como manual para que no se purgue
+    apt-mark manual libzip5; \
+    \
+    apt-mark auto '.*' > /dev/null; \
+    apt-mark manual $savedAptMark; \
+    ldd "$(php -r 'echo ini_get("extension_dir");')"/*.so \
+        | awk '/=>/ { print $3 }' \
+        | sort -u \
+        | xargs -r dpkg-query -S \
+        | cut -d: -f1 \
+        | sort -u \
+        | xargs -rt apt-mark manual; \
+    \
+    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+    rm -rf /var/lib/apt/lists/*
 
 # set recommended PHP.ini settings
 # see https://secure.php.net/manual/en/opcache.installation.php
