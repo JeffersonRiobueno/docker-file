@@ -1,7 +1,9 @@
 # ============================================
-#   DOCKERFILE OPTIMIZADO - WORDPRESS PHP 8.3
+#   DOCKERFILE OPTIMIZADO - WORDPRESS PHP 8.4
 # ============================================
-FROM php:8.3-apache
+# 8.4.27 corrige CVE-2026-109618 y CVE-2026-109619 (RCE, php.net 2026-10-21).
+# No bajar de esta version. Construir con: docker build --pull
+FROM php:8.4.27-apache
 
 # -------------------------------------------------
 # 1. Instalación de dependencias necesarias
@@ -46,7 +48,6 @@ RUN { \
     echo 'opcache.max_accelerated_files=10000'; \
     echo 'opcache.validate_timestamps=1'; \
     echo 'opcache.revalidate_freq=2'; \
-    echo 'opcache.fast_shutdown=1'; \
     echo 'opcache.enable_cli=1'; \
     } > /usr/local/etc/php/conf.d/opcache.ini
 
