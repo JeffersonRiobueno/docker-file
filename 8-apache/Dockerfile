@@ -6,11 +6,19 @@
 FROM php:8.4.27-apache
 
 # -------------------------------------------------
-# 1. Instalación de dependencias necesarias
+# 1. Dependencias de runtime, compilación de extensiones PHP y limpieza
+#    (los paquetes *-dev y el toolchain se compilan y se purgan en la misma capa)
 # -------------------------------------------------
 RUN set -eux; \
     apt-get update; \
     apt-get upgrade -y --no-install-recommends; \
+    # herramientas y codecs de ImageMagick de runtime (svg, djvu, openexr...): se instalan primero para que queden marcadas como manuales
+    apt-get install -y --no-install-recommends \
+        ghostscript \
+        vim less curl unzip \
+        libmagickcore-7.q16-10-extra \
+    ; \
+    savedAptMark="$(apt-mark showmanual)"; \
     apt-get install -y --no-install-recommends \
         libicu-dev \
         libfreetype6-dev \
@@ -19,16 +27,10 @@ RUN set -eux; \
         libwebp-dev \
         libmagickwand-dev \
         libzip-dev \
-        ghostscript \
-        vim less curl unzip \
     ; \
-    rm -rf /var/lib/apt/lists/*
-
-# -------------------------------------------------
-# 2. Extensiones PHP requeridas por WordPress
-# -------------------------------------------------
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
-    docker-php-ext-install -j$(nproc) \
+    # Extensiones PHP requeridas por WordPress
+    docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
+    docker-php-ext-install -j"$(nproc)" \
         bcmath \
         exif \
         gd \
@@ -37,7 +39,24 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
         pdo_mysql \
         zip; \
     pecl install imagick; \
-    docker-php-ext-enable opcache imagick
+    docker-php-ext-enable opcache imagick; \
+    rm -rf /tmp/pear; \
+    # Marca todo como auto, restaura lo manual previo y las librerias de runtime que usan las extensiones
+    apt-mark auto '.*' > /dev/null; \
+    [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark > /dev/null; \
+    find /usr/local -type f \( -executable -o -name '*.so' \) -exec ldd '{}' ';' \
+        | awk '/=>/ { so = $(NF-1); if (index(so, "/usr/local/") == 1) { next }; gsub("^/(usr/)?", "", so); print so }' \
+        | sort -u \
+        | xargs -r dpkg-query --search \
+        | grep -v '^diversion' \
+        | sed 's/: .*$//; s/, /\n/g' \
+        | grep -v -E -- '-dev(:|$)' \
+        | sort -u \
+        | xargs -rt apt-mark manual; \
+    # El toolchain de la imagen base (PHPIZE_DEPS) ya no hace falta: libc6-dev arrastra linux-libc-dev
+    apt-mark auto autoconf dpkg-dev file g++ gcc libc6-dev make pkg-config re2c > /dev/null; \
+    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+    rm -rf /var/lib/apt/lists/*
 
 # -------------------------------------------------
 # 3. Configuración de OPcache (mejora rendimiento PHP)
