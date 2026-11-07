@@ -35,6 +35,9 @@ jobs:
           context: 8-apache
           platforms: linux/amd64,linux/arm64
           pull: true
+          # En el rebuild semanal se ignora la cache para que `apt-get upgrade`
+          # se vuelva a ejecutar y recoja los parches de Debian.
+          no-cache: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
           push: true
           provenance: false
           tags: ${{ env.IMAGE }}:${{ env.TAG }}
